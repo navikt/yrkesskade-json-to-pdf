@@ -1,0 +1,82 @@
+name: Main - Build, deploy to dev, deploy to prod
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/dependabot.yml'
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}/yrkesskade-json-to-pdf:${{ github.sha }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Cache
+        uses: actions/cache@v1.1.2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Install Java 17
+        uses: actions/setup-java@v2.4.0
+        with:
+          java-version: 17
+          distribution: temurin
+      - name: test and build
+        run: ./gradlew test bootJar
+        env:
+          ORG_GRADLE_PROJECT_githubUser: ${{ github.actor }}
+          ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build docker image
+        run: docker build -t $IMAGE .
+      - name: Login to Github package registry
+        run: docker login ghcr.io -u ${GITHUB_REPOSITORY} -p ${GITHUB_TOKEN}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push docker image
+  deploytodev:
+    name: Deploy to dev
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        name: Checkout code
+      - uses: nais/deploy/actions/deploy@master
+        env:
+          APIKEY: ${{ secrets.NAIS_DEPLOY_API_KEY }}
+          CLUSTER: dev-gcp
+          RESOURCE: deploy/nais.yaml
+          VARS: deploy/dev.yaml
+#  deploytoprod:
+#    name: Deploy to prod
+#    needs: deploytodev
+#    if: github.ref == 'refs/heads/main'
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@master
+#        name: Checkout code
+#      - uses: nais/deploy/actions/deploy@master
+#        env:
+#          APIKEY: ${{ secrets.NAIS_DEPLOY_API_KEY }}
+#          CLUSTER: prod-gcp
+#          RESOURCE: deploy/nais.yaml
+#          VARS: deploy/prod.yaml
+#      - name: Generate release version
+#        run: |
+#          TIME=$(TZ="Europe/Oslo" date +%Y.%m.%d-%H.%M)
+#          COMMIT=$(git rev-parse --short=7 HEAD)
+#          VERSION=$TIME-$COMMIT
+#          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+#      - uses: actions/create-release@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          tag_name: ${{ env.VERSION }}
+#          release_name: ${{ env.VERSION }}

@@ -1,0 +1,3 @@
+spring:
+  application:
+    name: yrkesskade-json-to-pdf

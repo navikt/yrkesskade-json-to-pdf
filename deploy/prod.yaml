@@ -1,0 +1,4 @@
+ingresses:
+  - https://yrkesskade-json-to-pdf.intern.nav.no
+externalHosts:
+springProfile: prod-gcp
