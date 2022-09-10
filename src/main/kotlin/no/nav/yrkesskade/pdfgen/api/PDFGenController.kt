@@ -31,7 +31,7 @@ class PDFGenController(
         description = "Generate pdf from json"
     )
     @ResponseBody
-    @PostMapping("/topdf")
+    @PostMapping("/generer-pdf")
     fun toPDF(@RequestBody json: String): ResponseEntity<ByteArray> {
         logger.debug("toPDF() called. See body in secure logs")
         secureLogger.debug("toPDF() called. Received json: {}", json)
