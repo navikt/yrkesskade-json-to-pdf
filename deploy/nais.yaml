@@ -39,8 +39,8 @@ spec:
     - {{ingress}}
   {{/each}}
   replicas:
-    min: 2
-    max: 4
+    min: {{minReplicas}}
+    max: {{maxReplicas}}
     cpuThresholdPercentage: 80
   prometheus:
     enabled: true

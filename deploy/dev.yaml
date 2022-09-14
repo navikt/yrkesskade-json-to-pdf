@@ -2,6 +2,8 @@ ingresses:
   - https://yrkesskade-json-to-pdf.dev.intern.nav.no
 externalHosts:
 springProfile: dev-gcp
+minReplicas: 1
+maxReplicas: 1
 envs:
   - name: JAVA_TOOL_OPTIONS
     value: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
