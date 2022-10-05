@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - dev
       - main
     paths-ignore:
       - '.github/dependabot.yml'
@@ -44,7 +45,7 @@ jobs:
   deploytodev:
     name: Deploy to dev
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -55,29 +56,29 @@ jobs:
           CLUSTER: dev-gcp
           RESOURCE: deploy/nais.yaml
           VARS: deploy/dev.yaml
-#  deploytoprod:
-#    name: Deploy to prod
-#    needs: deploytodev
-#    if: github.ref == 'refs/heads/main'
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@master
-#        name: Checkout code
-#      - uses: nais/deploy/actions/deploy@master
-#        env:
-#          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
-#          CLUSTER: prod-gcp
-#          RESOURCE: deploy/nais.yaml
-#          VARS: deploy/prod.yaml
-#      - name: Generate release version
-#        run: |
-#          TIME=$(TZ="Europe/Oslo" date +%Y.%m.%d-%H.%M)
-#          COMMIT=$(git rev-parse --short=7 HEAD)
-#          VERSION=$TIME-$COMMIT
-#          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-#      - uses: actions/create-release@v1
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        with:
-#          tag_name: ${{ env.VERSION }}
-#          release_name: ${{ env.VERSION }}
+  deploytoprod:
+    name: Deploy to prod
+    needs: deploytodev
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        name: Checkout code
+      - uses: nais/deploy/actions/deploy@master
+        env:
+          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
+          CLUSTER: prod-gcp
+          RESOURCE: deploy/nais.yaml
+          VARS: deploy/prod.yaml
+      - name: Generate release version
+        run: |
+          TIME=$(TZ="Europe/Oslo" date +%Y.%m.%d-%H.%M)
+          COMMIT=$(git rev-parse --short=7 HEAD)
+          VERSION=$TIME-$COMMIT
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+      - uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.VERSION }}
+          release_name: ${{ env.VERSION }}
