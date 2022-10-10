@@ -1,7 +1,6 @@
 package no.nav.yrkesskade.pdfgen.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.openhtmltopdf.extend.FSSupplier
@@ -10,6 +9,7 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer
 import no.nav.yrkesskade.pdfgen.Application
 import no.nav.yrkesskade.pdfgen.transformers.HtmlCreator
+import no.nav.yrkesskade.saksbehandling.model.Brevinnhold
 import org.apache.pdfbox.io.IOUtils
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
@@ -37,21 +37,21 @@ data class FontMetadata(
 @Service
 class PDFGenService {
 
-    fun getPDFAsByteArray(json: String): ByteArray {
-        val doc = getHTMLDocument(jacksonObjectMapper().readValue(json, List::class.java) as List<Map<String, *>>)
+    fun getPDFAsByteArray(brevinnhold: Brevinnhold): ByteArray {
+        val doc = getHTMLDocument(brevinnhold)
         val outputStream = ByteArrayOutputStream()
         createPDFA(doc, outputStream)
         return outputStream.toByteArray()
     }
 
-    private fun getHTMLDocument(list: List<Map<String, *>>): Document {
-        validateHeaderFooter(list)
-        val creator = HtmlCreator(list)
+    private fun getHTMLDocument(brevinnhold: Brevinnhold): Document {
+//        validateHeaderFooter(brevinnhold)
+        val creator = HtmlCreator(brevinnhold)
         return creator.getDoc()
     }
 
     private fun validateHeaderFooter(list: List<Map<String, *>>) {
-        if (list.any { it["type"] == "header" }.xor(list.any { it["type"] == "footer" })) {
+        if (list.any { it["type"] == "header" } xor list.any { it["type"] == "footer" }) {
             throw RuntimeException("Both a header and a footer must be defined.")
         }
     }
