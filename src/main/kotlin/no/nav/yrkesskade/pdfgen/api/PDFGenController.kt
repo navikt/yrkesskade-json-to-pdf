@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import no.nav.yrkesskade.pdfgen.service.PDFGenService
 import no.nav.yrkesskade.pdfgen.util.getLogger
 import no.nav.yrkesskade.pdfgen.util.getSecureLogger
+import no.nav.yrkesskade.saksbehandling.model.Brevinnhold
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -32,11 +33,12 @@ class PDFGenController(
     )
     @ResponseBody
     @PostMapping("/generer-pdf")
-    fun toPDF(@RequestBody json: String): ResponseEntity<ByteArray> {
+    fun toPDF(@RequestBody innhold: Brevinnhold): ResponseEntity<ByteArray> {
         logger.debug("toPDF() called. See body in secure logs")
-        secureLogger.debug("toPDF() called. Received json: {}", json)
+        secureLogger.debug("toPDF() called. Received innhold: {}", innhold)
 
-        val data = pdfGenService.getPDFAsByteArray(json)
+
+        val data = pdfGenService.getPDFAsByteArray(innhold)
 
         val responseHeaders = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_PDF
