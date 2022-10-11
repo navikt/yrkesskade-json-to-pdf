@@ -328,6 +328,7 @@ class HtmlCreator(private val brevinnhold: Brevinnhold) {
 //            footer = "Postadresse: NAV Klageinstans Midt-Norge // Postboks 2914 Torgarden // 7438 Trondheim\\ATelefon: 21 07 17 30\\Anav.no"
 //        }
 
+
         //add css when we have a footer set
         val head = document.create.head {
             style {
