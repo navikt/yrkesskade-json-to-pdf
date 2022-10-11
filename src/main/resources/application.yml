@@ -22,7 +22,9 @@ spring:
       max-file-size: 8MB
   codec:
     max-in-memory-size: 16MB
-
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
 maxAttachmentSize: 8MB
 
 server:

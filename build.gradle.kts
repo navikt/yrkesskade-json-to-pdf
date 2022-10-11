@@ -1,15 +1,23 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val mockkVersion = "1.12.7"
+val mockkVersion = "1.13.2"
 val logstashVersion = "7.2"
 val jsoupVersion = "1.15.3"
 val openHtmlToPdfVersion = "1.0.10"
 val kotlinxHtmlVersion = "0.7.5"
 val springDocVersion = "1.6.11"
+val backendFellesVersion = "3d14a89e_202210101006"
 
 repositories {
     mavenCentral()
     jcenter()
+    maven {
+        url = uri("https://maven.pkg.github.com/navikt/yrkesskade-backend-felles")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_USERNAME")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
 
 plugins {
@@ -41,6 +49,8 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:$kotlinxHtmlVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-html:$kotlinxHtmlVersion")
+
+    implementation("no.nav.yrkesskade:saksbehandling:$backendFellesVersion")
 
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("org.springframework:spring-mock:2.0.8")

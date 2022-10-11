@@ -1,5 +1,6 @@
 package no.nav.yrkesskade.pdfgen.transformers
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
@@ -10,16 +11,17 @@ import no.nav.yrkesskade.pdfgen.transformers.ElementType.FOOTER
 import no.nav.yrkesskade.pdfgen.transformers.ElementType.HEADER
 import no.nav.yrkesskade.pdfgen.util.getLogger
 import no.nav.yrkesskade.pdfgen.util.getSecureLogger
-import org.apache.commons.lang3.StringUtils
+import no.nav.yrkesskade.saksbehandling.model.Brevinnhold
 import org.w3c.dom.Document
 import org.w3c.dom.Node
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Suppress("UNCHECKED_CAST")
-class HtmlCreator(val dataList: List<Map<String, *>>) {
+class HtmlCreator(private val brevinnhold: Brevinnhold) {
 
     companion object {
         @Suppress("JAVA_CLASS_ON_COMPANION")
@@ -61,6 +63,12 @@ class HtmlCreator(val dataList: List<Map<String, *>>) {
                                 #header span {
                                     font-size: 10pt;
                                 }
+                                #navn {
+                                    text-align: left;
+                                }
+                                #dato {
+                                    text-align: right;
+                                }
                                 img {
                                     display: block;
                                     width: 100pt;
@@ -68,6 +76,13 @@ class HtmlCreator(val dataList: List<Map<String, *>>) {
                                 },
                                 p, span {
                                     font-size: 12pt;
+                                }
+                                .tabellUnderLogo {
+                                    margin-top: 100px;
+                                    margin-bottom: 75px;
+                                }
+                                .navnOgDato {
+                                    width: 100%;
                                 }
                                 .bold {
                                     font-weight: bold;
@@ -86,27 +101,21 @@ class HtmlCreator(val dataList: List<Map<String, *>>) {
                                 }
                                 
                                 @page {
-                                    margin: 15mm 20mm 20mm 20mm;
-                                    @bottom-left {
-                                        content: "";
-                                    }
-                                    @bottom-right {
-                                        font-family: "Source Sans Pro" !important;
-                                        font-size: 10pt;
-                                        content: "Side " counter(page) " av " counter(pages);
-                                    }
-                                }
-
-                                @page :first {
                                     margin: 15mm 20mm 30mm 20mm;
                                     @bottom-left {
                                         font-family: "Source Sans Pro" !important;
                                         font-size: 10pt;
                                         content: "$footer";
+                                        margin: 100mm 200mm 50mm 20mm;
+                                        padding-left: 3mm;
                                         white-space: pre-wrap;
+                                        text-align: left;
                                     }
                                     @bottom-right {
-                                        content: "";
+                                        font-family: "Source Sans Pro" !important;
+                                        font-size: 10pt;
+                                        content: "Side " counter(page) " av " counter(pages);
+                                        text-align: right;
                                     }
                                 }
                             """.trimIndent()
@@ -116,23 +125,40 @@ class HtmlCreator(val dataList: List<Map<String, *>>) {
         .html {
             body {
                 div {
-                    id = "header"
-                    span {
-                        id = "header_text"
-                    }
                     img { src = "nav_logo.png" }
                 }
-                br { }
-                br { }
-                br { }
-                br { }
-
+                div("tabellUnderLogo") {
+                    table("navnOgDato") {
+                        tr {
+                            td {
+                                div {
+                                    id = "navn"
+                                    p {
+                                        +brevinnhold.navn.uppercase()
+                                    }
+                                }
+                            }
+                            td {
+                                div {
+                                    id = "dato"
+                                    p {
+                                        +"Dato: ${dateAsText(brevinnhold.dato)}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 div { id = "div_content_id" }
             }
         }
 
-    private var footer = ""
-//        "NAV Klageinstans\\Anav.no"
+    private var footer =
+        """
+            NAV Familie og Pensjonsytelser
+            Postadresse: NAV Skanning Postboks 1400, 0109 Oslo. 
+            Telefon 55 55 33 33 // nav.no
+        """.trimIndent().replace("\n", "\\A")
 
     private fun addLabelContentElement(map: Map<String, *>) {
         val result = map["result"] ?: return
@@ -274,18 +300,22 @@ class HtmlCreator(val dataList: List<Map<String, *>>) {
     }
 
     private fun addCurrentDate() {
-        val formatter = DateTimeFormatter.ofPattern("dd. MMMM yyyy", Locale.forLanguageTag("nb"))
-        val dateAsText = ZonedDateTime.now(ZoneId.of("Europe/Oslo")).format(formatter)
-
         val div = document.create.div {
             classes = setOf("alignRight")
-            +"Dato: $dateAsText"
+            +"Dato: ${dateAsText(null)}"
         }
         val divElement = document.getElementById("div_content_id") as Node
         divElement.appendChild(div)
     }
 
+    private fun dateAsText(date: LocalDate?): String? {
+        val formatter = DateTimeFormatter.ofPattern("dd. MMMM yyyy", Locale.forLanguageTag("nb"))
+        return date?.format(formatter) ?: ZonedDateTime.now(ZoneId.of("Europe/Oslo")).format(formatter)
+    }
+
     fun getDoc(): Document {
+        val brevinnholdAsJson = jacksonObjectMapper().writeValueAsString(brevinnhold.tekst)
+        val dataList = jacksonObjectMapper().readValue(brevinnholdAsJson, List::class.java) as List<Map<String, *>>
         dataList.forEach {
             processElement(it)
         }
